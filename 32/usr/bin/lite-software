@@ -1,0 +1,304 @@
+#! /bin/bash
+#--------------------------------------------------------------------------------------------------------
+# Name: Linux Lite Additional Software Install
+# Description: A GUI tool to easily install and remove additional software in Linux Lite.
+# Authors: Misko_2083, Jerry Bezencon, gerito1
+# Website: https://www.linuxliteos.com
+#--------------------------------------------------------------------------------------------------------
+
+# Ensure multi-language support
+export LANG=C
+
+# Set up log facilities
+# Example output: [02/06/15 20:03:12] message input
+LOGFILE=/var/log/lite-software.log
+log(){
+    message="$@"
+    echo '['$(date +%D\ %H:%M:%S)'] '$message >>$LOGFILE
+}
+
+# Log last activities to retrieve errors
+TMP_LOG=/tmp/lite-software.log
+
+# Check if apt-cache was built and ask for update if needed
+prepare(){
+  if zenity --question --title="Update Sources" --window-icon=$ic --text="We will now update your software sources.\n\nClick Yes to continue or No to abort."; then
+    TOTALREPOS=$(cat /etc/apt/sources.list | grep '^deb' -c) # Total of repositories registered, this is approximated
+    sudo apt-get update 2>&1 | awk -v total=$TOTALREPOS '/^Ign|^ Get/{count++;$1=""} FNR { if (total != 0){percentage=int (100*count/total);print (percentage < 90?percentage:90),"\n#",$0 }; fflush(stdout)}' \
+      | zenity --progress --text="Updating package lists..." --window-icon=$ic --title="Updating Software Sources - please wait..." --percentage=0 --auto-close --width=600
+    if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+      zenity --error --title="Error" --text="Updating sources has failed.\n\nRefer to /var/log/lite-software.log\n\nfor more information."
+      log "ERROR: Updating sources has failed."
+      exit 0
+    fi
+    log "INFO: Software sources were updated."
+  else
+    log "INFO: The updating of packages was cancelled by the user"
+    exit
+  fi
+}
+
+# Ask to kill off any package managers that may be running or just exit
+pkg_manager_check(){
+  if [[ "$(pidof synaptic)"||"$(pgrep gdebi-gtk)" ]]; then
+    if zenity --question --title="Package Manager detected as open" --ok-label="Yes" --cancel-label="No" --text="A package manager is still running. Do you want to close it?"; then
+      sudo killall -9 synaptic gdebi-gtk
+    else
+      exit 0
+    fi
+  fi
+}
+
+#--------------------------------------------------------------------------------------------------------
+# soft_list is the list of package aliases to check/install/remove
+# Consist in a list describing aspect for every package
+# package_alias=( "element 0" "element 1" "element 2" "element 3" "element 4" "element 5" "element 6")
+# element 0: TRUE\FALSE for being selected
+# element 1: The Application name ie: Google Chrome, iDevices Manager
+# element 2: The category which belongs to (one only) ie:  Internet, Multimedia
+# element 3: Status of the package ie: Installed, Not Installed
+# element 4: Description of the package ie: "Easily locate files and folders in your computer", "Clementine is a modern music player and library organizer"
+# element 5: List of packages needed to provide the application ie: "aisleriot gnome-mahjongg gnome-chess gnome-mines gnome-hearts"
+# element 6: List of additional packages (this is optional) ie: libavformat-extra-54
+#--------------------------------------------------------------------------------------------------------
+soft_list=(appletrailers
+  googlechromebr
+  chromiumbr
+  dropbox
+  catfish
+  gamespack
+  googletalk
+  idevices
+  imessenger
+  javaplugin
+  kodi
+  clementine
+  passmgr
+  playonlinux
+  remote
+  extras
+  skype
+  teamviewer
+  torrent
+  tor
+  videoedit
+  vbox
+  weather
+  guvcview
+  wine )
+
+appletrailers=("FALSE" "Apple Trailers Plugin" "Internet" "" "Watch Apple trailers in your web browser (Firefox only)" "totem-mozilla" "ubuntu-restricted-extras" )
+googlechromebr=("FALSE" "Chrome Web Browser" "Internet" "" "Install the Google Chrome web browser" "google-chrome-stable" "" )
+chromiumbr=("FALSE" "Chromium Web Browser" "Internet" "" "Install the open-source alternative to the Google Chrome web browser" "chromium-browser" "" )
+dropbox=("FALSE" "Dropbox" "Internet" "" "A popular cloud storage application" "nautilus-dropbox" "" )
+catfish=("FALSE" "File and Folder Search" "Accessories" "" "Easily locate files and folders in your computer" "catfish" "" )
+gamespack=("FALSE" "Games Pack" "Games" "" "Provides with Solitaire, Chess, Mahjongg, Mines and Hearts games" "aisleriot gnome-mahjongg gnome-chess gnome-mines gnome-hearts" "" )
+googletalk=("FALSE" "Google Talk Browser Plugin" "Internet" "" "Install this plugin to use Google Hangouts video chat" "google-talkplugin" "" )
+idevices=("FALSE" "iDevices Manager" "Multimedia" "" "Manage your iDevices with Gtkpod" "gtkpod" "" )
+imessenger=("FALSE" "Instant Messenger" "Internet" "" "This will install Pidgin, a multi-protocol Instant Messenging client" "pidgin" "" )
+javaplugin=("FALSE" "Java Web Applet Plugin" "Internet" "" "To allow you to view java applets in your web browser" "icedtea-7-plugin" "" )
+kodi=("FALSE" "Kodi" "Multimedia" "" "This will install the Kodi Media Center (formerly known as XBMC)" "kodi" "" )
+clementine=("FALSE" "Music Player" "Multimedia" "" "Clementine is a modern music player and library organizer" "clementine" "")
+passmgr=("FALSE" "Password Manager" "Accessories" "" "Installs KeePassX, an excellent password manager" "keepassx" "" )
+playonlinux=("FALSE" "PlayOnLinux" "Cross Platform" "" "Easily install and use numerous games and apps designed to run with Windows" "playonlinux" "" )
+remote=("FALSE" "Remote Desktop Software" "Internet" "" "Installs the Remmina Remote Desktop Client for Windows (RDP) and VNC Servers" "remmina" "" )
+extras=("FALSE" "Restricted Extras" "Multimedia" "" "Installs additional codecs and useful file formats that are not shipped by default" "ubuntu-restricted-extras" "libavcodec-extra-54" )
+skype=("FALSE" "Skype" "Internet" "" "A popular audio and video chat application" "skype-bin" "skype" )
+teamviewer=("FALSE" "Teamviewer" "Internet" "" "Installs Teamviewer Remote Desktop Support software" "teamviewer" "" )
+torrent=("FALSE" "Torrent Software" "Internet" "" "Installs the Deluge Torrent client software" "deluge deluge-common" "" )
+tor=("FALSE" "Tor Web Browser" "Internet" "" "Installs Tor Web Browser a privacy respecting web browser" "tor-web-browser" "" )
+videoedit=("FALSE" "Video Editing Software" "Multimedia" "" "Installs Openshot, a simple to use yet powerful video editor for linux" "openshot blender imagemagick" "libavformat-extra-54")
+vbox=("FALSE" "VirtualBox" "System" "" "Virtualbox - install other operating systems like Windows from within Linux Lite" "virtualbox" "" )
+weather=("FALSE" "Weather Monitor" "System Tray" "" "This will install a Weather Monitor Plugin for your tray" "xfce4-weather-plugin" "" )
+guvcview=("FALSE" "Webcam Software" "Internet" "" "Guvcview, webcam software for your computer" "guvcview" "" )
+wine=("FALSE" "Wine" "Cross Platform" "" "Wine - install and run some Windows programs and games on Linux Lite" "wine1.7" "")
+
+get_pkg_status(){
+  result="Installed"
+  for PKG in  $@
+  do
+    TEST_PKG=(`apt-cache policy $PKG | grep "Installed:"`)
+    if [ "${TEST_PKG[1]}" == "(none)" ];then
+      result="Not Installed"
+      break
+    fi
+  done
+  read ${2} <<< $result
+  unset result
+  unset TEST_PKG
+}
+
+# Check for installed packages
+check_installed(){
+  for element in ${soft_list[*]}
+  do
+    current_pkg=$element[5]
+    status=$element[3]
+    get_pkg_status "${!current_pkg}" status # Get the status of the main package
+    read ${element}"[3]" <<< $status        # Write the status in the package status
+  done
+}
+
+install_pkgs(){
+  declare -a pkg_arr=("${!1}")
+
+  log "INFO: Installation of packages initiated: ${pkg_arr[@]}"
+  sudo apt-get install -f --show-progress ${pkg_arr[@]} --force-yes -y 2>&1 | tee $TMP_LOG | awk ' BEGIN { FS=" "; total=1;end_download=0} /upgraded/ {total= $1 + $3;FS="[ :]" } /^Get:[[:digit:]]+/ {printf "#Downloading %s %s %s\n",$6,$(NF-1),$NF;print int(($2 - 1) * 100 / total); fflush(stdout)} /^\(Reading / {if (end_download==0){print 100;fflush(stdout);end_download=1}} /^(Preparing|Unpacking|Selecting|Processing|Setting|Download)/ {print "#", $0; fflush(stdout)}  /^Progress/ {print  match($0, /([0-9]+)/, arr); if(arr[1] != "") print arr[1] ; fflush(stdout)}' \
+    | ( zenity --window-icon=$ic --progress --width=600 --text="Downloading package(s)...\nThis may take a while." --title="Downloading - please wait..." --percentage=0 --auto-close ; zenity --progress --window-icon=$ic --width=600 --text="Installing and configuring packages...\nThis may take a while." --title="Installing - please wait..." --auto-close )
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+    err_msg=$(awk '/^E:/{$1=""; print $0}' $TMP_LOG | tail -n 1)
+    log "ERROR:$err_msg"
+    zenity --error --title="Error" --text="Error\n$err_msg"
+    return
+  else
+    zenity --info --title="Install Complete" --text="The package(s) installed successfully."
+    log "INFO: Installation was a success."
+  fi
+}
+
+remove_pkgs(){
+  declare -a pkg_arr=("${!1}")
+
+  log "INFO: Removal of packages initiated: ${pkg_arr[@]}"
+  sudo apt-get remove -f ${pkg_arr[@]} --force-yes -y 2>&1 | tee $TMP_LOG | awk ' BEGIN { FS=" "; total=0; pkg=0}  /upgraded/ {total=$6 } /^Removing/ {print "#", $0;pkg+=1;print int((pkg - 1) * 100 / total); fflush(stdout)}' \
+    | zenity --progress --window-icon=$ic --width=600 --text="Removing package(s)...\nThis may take a while." --title="Removing Software - please wait..." --percentage=0 --auto-close
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+    err_msg=$(awk '/^E:/{$1=""; print $0}' $TMP_LOG | tail -n 1)
+    log "ERROR:$err_msg"
+    zenity --error --title="Error" --text="Error\n$err_msg"
+    return
+  else
+    zenity --info --title="Removal Complete" --text="The package(s) uninstalled successfully."
+    log "INFO: Removal was a success."
+  fi
+}
+
+# The installation menu
+install_menu(){
+  check_installed
+  ic="/usr/share/icons/zenity-llcc.png"
+  selection=$(for element in ${soft_list[*]}
+    do
+      row=$element[@]                          #grab the whole row
+      printf  '%s\n' "${!row}"                 #print every element in the row separated with a newline
+    done | zenity --window-icon="$ic" --list --checklist --width=920 --height=720 --print-column=2,6,7 --separator="| " --column="Select" --column="Name" --column="Category" --column="Status" \
+      --column="Description" --column="Packages" --column="Optional Packages" --text="Select the program you wish to install, then click the Install button. Sort Categories by clicking on the column.\nYou can select multiple programs to install." \
+      --title="Install Additional Software" --ok-label="Install" --hide-column=6,7 )
+
+  # If Cancel is clicked then return to main loop
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+    return
+  fi
+
+  # Check if anything is selected
+  echo $selection | grep '[a-zA-Z0-9]'
+  if [ "${PIPESTATUS[1]}" -ne "0" ]; then
+    zenity --info --title='Install Additional Software' --text='Nothing was selected for installation.'
+    return
+  fi
+
+  # Split selection
+  OIFS=$IFS
+  IFS='|'
+  selection_array=($selection)
+  PKGS_NAMES=""
+  PKGS=""
+  for ((i=0; i<${#selection_array[@]}; ++i));
+  do
+    if (( i % 3 == 0 )); then
+      PKGS_NAMES=$PKGS_NAMES${selection_array[$i]}"\n"
+      continue
+    fi
+    PKGS=$PKGS${selection_array[$i]}" "
+  done
+  IFS=$OIFS
+
+  zenity --question --title="Install Software" --window-icon="${ic}" --text="The following software is selected for installation:\n\n $PKGS_NAMES \n Do you want to proceed?"
+  if [ "$?" -eq "0" ]; then
+    install_pkgs PKGS[@]
+  else
+    return
+  fi
+}
+
+# The installation menu
+remove_menu(){
+
+  check_installed
+  ic="/usr/share/icons/zenity-llcc.png"
+
+  selection=$(for element in ${soft_list[*]}
+    do
+      pkg_status=$element[3]
+
+      #Only list Installed applications
+      if [ "${!pkg_status}" == "Not Installed" ]; then
+        continue;
+      fi
+      row=$element[@]                          #grab the whole row
+      printf  '%s\n' "${!row}"                 #print every element in the row separated with a newline
+    done | zenity --window-icon="$ic" --list --checklist --width=920 --height=720 --print-column=2,6 --separator="| " --column="Select" --column="Name" --column="Category" --column="Status" \
+      --column="Description" --column="Packages" --column="Optional Packages" --text="Select the program you wish to remove, then click the Remove button. Sort Categories by clicking on the column.\nYou can select multiple programs to remove." \
+      --title="Remove Additional Software" --ok-label="Remove" --hide-column=6,7 )
+
+  # If Cancel is clicked then return to main loop
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+    return
+  fi
+
+  # Check if anything is selected
+  echo $selection | grep '[a-zA-Z0-9]'
+  if [ "${PIPESTATUS[1]}" -ne "0" ]; then
+    zenity --info --title='Remove Software' --text='Nothing was selected for removal.'
+    return
+  fi
+
+  # Split selection
+  OIFS=$IFS
+  IFS='|'
+  selection_array=($selection)
+  PKGS_NAMES=""
+  PKGS=""
+  for ((i=0; i<${#selection_array[@]}; ++i));
+  do
+    if (( i % 2 == 0 )); then
+      PKGS_NAMES=$PKGS_NAMES${selection_array[$i]}"\n"
+      continue
+    fi
+    PKGS=$PKGS${selection_array[$i]}" "
+  done
+  IFS=$OIFS
+  zenity --question --title="Remove Software" --window-icon="${ic}" --text="The following software is selected for removal:\n\n $PKGS_NAMES \n Do you want to proceed?"
+  if [ "$?" -eq "0" ]; then
+    remove_pkgs PKGS[@]
+  else
+    return
+  fi
+}
+
+# We begin here
+prepare
+pkg_manager_check
+# The main loop
+while (true); do
+  TASK=$(zenity --width=250 --height=180 --list --radiolist --text="Select a task:" \
+    --title="Lite Software" --column="Select" --column="Task" --column="Code Task" --hide-column=3 \
+    --print-column=3 --cancel-label="Quit" TRUE "Install Software" 1 FALSE "Remove Software" 2 FALSE "Exit" 3)
+  if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+    exit 0
+  elif [ -n "${TASK}" ];then
+    case $TASK in
+      "1")
+        install_menu
+        ;;
+      "2")
+        remove_menu
+        ;;
+      "3")
+        exit 0
+        ;;
+    esac
+  fi
+done
+
+exit 0

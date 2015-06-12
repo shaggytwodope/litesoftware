@@ -1,0 +1,59 @@
+#!/bin/bash
+#--------------------------------------------
+# Description: Linux Lite Network Shares GUI Dialogue
+# Author: Jerry Bezencon 2015
+# Website: https://www.linuxliteos.com
+#--------------------------------------------
+
+# Main window dialogue.
+ DIALOGUE="Configure Network Share Settings
+-----------------------------------------------------------------------------------------------------
+This dialogue will allow you to configure Network Share Settings.
+These settings will open in your text editor.
+<b>Apply these settings carefully.</b>
+
+After you have finished editing this file, Network Share Services
+will restart automatically.
+
+-----------------------------------------------------------------------------------------------------
+Click on Yes to continue or No to cancel."
+
+# Call the zenity window icon location.
+ INSTALL_ICON="/usr/share/icons/zenity-llcc.png"
+ CONFIGURE="Configure Network Share Settings"
+        
+        zenity --question --title="$CONFIGURE" --window-icon="${INSTALL_ICON}" --text="${DIALOGUE}"
+
+                if [ "$?" -eq "0" ]; then
+
+EDITSHARES=$(sudo xdg-open /etc/samba/smb.conf )
+unset EDITSHARES
+
+RESTARTSHARES=$( stdbuf -oL /bin/bash \-c '(sudo service smbd restart && sudo service nmbd restart && sleep 3 )' 2>&1 |
+stdbuf -oL sed -n -e 's/^\(.\{128\}\).*/\1/' -e '/\[*$/ s/^/# /p' -e '/\*$/ s/^/# /p' |     #sed 's/^\(.\{128\}\).*/\1/'  Display only the first 128 characters
+zenity --progress --title="Restarting Network Share Services..." --pulsate \
+--width=600 --auto-close )
+unset RESTARTSHARES
+
+                                if [ "${PIPESTATUS[0]}" -ne "0" ]; then
+                        
+                                        zenity --error \
+                                        --title="Error" --text="$CONFIGURE has failed."
+                                        exit 0
+                                fi
+
+                else
+
+                                        exit 0
+                fi
+
+
+PROCEED=$(zenity --info --title="$CONFIGURE" --window-icon=/usr/share/icons/zenity-llcc.png --width="280" --text="Your settings have been applied."; echo $?)
+if [ ${PROCEED} -eq 1 ]; then
+	zenity --info --title="Finished" --window-icon="${INSTALL_ICON}" --text="Your settings have been applied."
+	exit;
+else
+	exit
+fi
+
+exit 0

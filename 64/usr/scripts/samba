@@ -1,0 +1,23 @@
+#!/bin/bash
+
+bold=`tput bold`
+normal=`tput sgr0`
+
+echo "${bold}*******************************"
+echo "Linux Lite Network Shares Setup"
+echo "*******************************${normal}"
+echo ""
+echo "This process will set up network shares"
+echo "between this computer and a Windows computer."
+echo "A Text Editor will open where you can edit a configuration file."
+echo ""
+echo "Please click on ${bold}Menu, Help and Support${normal} now. In the"
+echo "Manual, click on ${bold}Network${normal} and then the ${bold}Network Shares${normal} link"
+echo "and follow the instructions."
+echo "After you have finished editing this file, you must"
+echo "click on ${bold}Restart Network Share Services${normal} to apply the"
+echo "new settings."
+echo ""
+echo "This window will automatically close when you save the text file."
+echo "Please enter your password to continue..."
+sudo leafpad /etc/samba/smb.conf

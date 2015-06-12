@@ -1,0 +1,18 @@
+#!/bin/bash
+
+bold=`tput bold`
+normal=`tput sgr0`
+
+echo "${bold}******************************"
+echo "Restart Network Share Services"
+echo "******************************${normal}"
+echo ""
+echo "This will restart your Network Share Services to apply the new settings."
+echo ""
+echo "This window will automatically close when Network Share Services have restarted."
+echo "Please enter your password to continue..."
+sudo service smbd restart
+sudo service nmbd restart
+echo ""
+echo "This window will now close."
+sleep 3
