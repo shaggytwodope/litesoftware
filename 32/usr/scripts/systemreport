@@ -198,7 +198,7 @@ echo "Network Information" >> /tmp/systeminfo-"${DATE}".txt
 echo "===========================================================" >> /tmp/systeminfo-"${DATE}".txt
 echo "" >> /tmp/systeminfo-"${DATE}".txt
 ifconfig >> /tmp/systeminfo-"${DATE}".txt
-more /etc/network/interfaces >> /tmp/systeminfo-"${DATE}".txt
+cat /etc/network/interfaces >> /tmp/systeminfo-"${DATE}".txt
 echo "" >> /tmp/systeminfo-"${DATE}".txt
 sudo lshw -C network >> /tmp/systeminfo-"${DATE}".txt
 echo "" >> /tmp/systeminfo-"${DATE}".txt
