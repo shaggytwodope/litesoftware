@@ -5,4 +5,4 @@ Authors - [Jerry Bezencon,](https://github.com/linuxlite/) [Misko-2083,](https:/
 
 A gui tool to easily install and remove popular software.
 
-![](http://i.imgur.com/0jmUhhK.png)
+![](http://i.imgur.com/Sp2ep6h.png)
