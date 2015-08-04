@@ -37,7 +37,7 @@ zenity --question --title="Linux Lite Updates" --window-icon="/usr/share/icons/z
                                         rm $UPDATES
                                         unset UPDATES
                                         zenity --error \
-                                        --title="Error" --text="$APPNAME couldn't fetch the package cache information lists."
+                                        --title="Error" --text="$APPNAME Couldn't fetch the package cache information lists."
 
                                         exit 1
                                 fi
