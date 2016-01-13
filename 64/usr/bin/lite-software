@@ -113,7 +113,7 @@ videoedit=("FALSE" "Video Editing Software" "Multimedia" "" "Installs Openshot, 
 vbox=("FALSE" "VirtualBox" "System" "" "Virtualbox - install other operating systems like Windows from within Linux Lite" "virtualbox" "" )
 weather=("FALSE" "Weather Monitor" "System Tray" "" "This will install a Weather Monitor Plugin for your tray" "xfce4-weather-plugin" "" )
 guvcview=("FALSE" "Webcam Software" "Internet" "" "Guvcview, webcam software for your computer" "guvcview" "" )
-wine=("FALSE" "Wine" "Cross Platform" "" "Wine - install and run some Windows programs and games on Linux Lite" "wine1.7" "")
+wine=("FALSE" "Wine" "Cross Platform" "" "Wine - install and run some Windows programs and games on Linux Lite" "wine1.8" "")
 
 get_pkg_status(){
   result="Installed"
