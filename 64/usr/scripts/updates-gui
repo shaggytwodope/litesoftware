@@ -6,16 +6,28 @@
 # Website: https://www.linuxliteos.com
 #-----------------------------------------------------------------------------------------
 
-# Kill off any package managers that may be running
-if [ "$(pidof synaptic)" ] 
-then
-   sudo killall -9 synaptic
-fi
+function checklock () {
+# Checks for exclusive lock and wait until package managers are closed
+while  fuser /var/lib/dpkg/lock 2>&1 >/dev/null  ; do
+	echo "# Waiting for other software managers to finish..." $"\n"
+	if [ "$(pidof synaptic)" ]; then
+		echo "# Waiting for other software managers to finish..." $"\nsynaptic"
+	fi
+	echo 1
+	sleep 1
+	echo 30
+	sleep 1
+	echo 60
+	sleep 1
+	if [ ! -z "$(pgrep gdebi-gtk)" ]; then
+		echo "# Waiting for other software managers to finish..." $"\ngdebi-gtk"
+	fi
+	echo 95
+	sleep 1
+done | (if ! zenity --progress --title="$APPNAME - close any open package managers" --percentage=20 --auto-close;then killall $(basename $0); exit; fi)
 
-if [ ! -z "$(pgrep gdebi-gtk)" ]
-then
-   killall -9 gdebi-gtk
-fi
+}
+checklock
 
 # Updates log variable
 UPDATES=$(mktemp /tmp/updateslist.XXXXXX)
