@@ -1,0 +1,32 @@
+#!/bin/bash
+#-----------------------------------------------------------------------------------------
+# Name: Linux Lite Updates
+# Description: A GUI tool to graphically update apt cache.
+# Authors: Misko_2083, Jerry Bezencon, gerito1, Johnathan "ShaggyTwoDope" Jenkins
+# Website: https://www.linuxliteos.com
+#-----------------------------------------------------------------------------------------
+
+# Kill off any package managers that may be running
+if [ "$(pidof synaptic)" ]
+then
+  sudo killall -9 synaptic
+fi
+
+if [ ! -z "$(pgrep gdebi-gtk)" ]
+then
+  killall -9 gdebi-gtk
+fi
+
+# Linux Lite default dialog icon
+ic="/usr/share/icons/zenity-llcc.png"
+
+
+
+APTUPDATE=$(grep '^deb' -c /etc/apt/sources.list) # Total of repositories registered, this is approximated
+sudo apt-get update 2>&1 | awk -v total="$APTUPDATE" '/^Ign|^ Get/{count++;$1=""} FNR { if (total != 0){percentage=int (100*count/total);print (percentage < 90?percentage:90),"\n#",substr($0, 0, 128) }; fflush(stdout)}' \
+| zenity --progress --text="Updating package lists..." --window-icon=$ic --title="Updating Software Sources - please wait..." --percentage=0 --auto-close --width=600
+
+
+
+
+exit 0
