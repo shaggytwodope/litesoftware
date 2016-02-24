@@ -44,7 +44,7 @@ zenity --question --title="Linux Lite Updates" --window-icon="/usr/share/icons/z
 unset APTUPDATE
 
 # Creates a list in /tmp/updateslist
-apt-get --just-print upgrade 2>&1 | perl -ne 'if (/Inst\s([\w,\-,\d,\.,~,:,\+]+)\s\[([\w,\-,\d,\.,~,:,\+]+)\]\s\(([\w,\-,\d,\.,~,:,\+]+)\)? /i) {print "Name: $1 INSTALLED: $2 AVAILABLE: $3\n"}' | awk '{print NR,":\t"$0}' | tee $UPDATES
+apt-get --just-print dist-upgrade 2>&1 | perl -ne 'if (/Inst\s([\w,\-,\d,\.,~,:,\+]+)\s\[([\w,\-,\d,\.,~,:,\+]+)\]\s\(([\w,\-,\d,\.,~,:,\+]+)\)? /i) {print "Name: $1 INSTALLED: $2 AVAILABLE: $3\n"}' | awk '{print NR,":\t"$0}' | tee $UPDATES
 
 # Check if any updates are available, if there are none, script pops up dialog box saying 'No Updates Available', removes /tmp/updateslist.XXXXXX
 if [  -z "$(cat $UPDATES)"  ]; then
