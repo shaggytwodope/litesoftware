@@ -61,8 +61,7 @@ pkg_manager_check(){
 # element 5: List of packages needed to provide the application ie: "aisleriot gnome-mahjongg gnome-chess gnome-mines gnome-hearts"
 # element 6: List of additional packages (this is optional) ie: libavformat-extra-54
 #--------------------------------------------------------------------------------------------------------
-soft_list=(appletrailers
-  googlechromebr
+soft_list=(googlechromebr
   chromiumbr
   dropbox
   catfish
@@ -88,7 +87,6 @@ soft_list=(appletrailers
   guvcview
   wine )
 
-appletrailers=("FALSE" "Apple Trailers Plugin" "Internet" "" "Watch Apple trailers in your web browser (Firefox only)" "totem-mozilla" "ubuntu-restricted-extras" )
 googlechromebr=("FALSE" "Chrome Web Browser" "Internet" "" "Install the Google Chrome web browser" "google-chrome-stable" "" )
 chromiumbr=("FALSE" "Chromium Web Browser" "Internet" "" "Install the open-source alternative to the Google Chrome web browser" "chromium-browser" "" )
 dropbox=("FALSE" "Dropbox" "Internet" "" "A popular cloud storage application" "nautilus-dropbox" "" )
