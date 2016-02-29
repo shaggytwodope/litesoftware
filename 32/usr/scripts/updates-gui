@@ -44,7 +44,7 @@ zenity --question --title="Linux Lite Updates" --window-icon="/usr/share/icons/z
 unset APTUPDATE
 
 # Creates a list in /tmp/updateslist
-apt-get --just-print dist-upgrade 2>&1 | perl -ne 'if (/Inst\s([\w,\-,\d,\.,~,:,\+]+)\s\[([\w,\-,\d,\.,~,:,\+]+)\]\s\(([\w,\-,\d,\.,~,:,\+]+)\)? /i) {print "Name: $1 INSTALLED: $2 AVAILABLE: $3\n"}' | awk '{print NR,":\t"$0}' | tee $UPDATES
+apt-get --just-print upgrade 2>&1 | perl -ne 'if (/Inst\s([\w,\-,\d,\.,~,:,\+]+)\s\[([\w,\-,\d,\.,~,:,\+]+)\]\s\(([\w,\-,\d,\.,~,:,\+]+)\)? /i) {print "Name: $1 INSTALLED: $2 AVAILABLE: $3\n"}' | awk '{print NR,":\t"$0}' | tee $UPDATES
 
 # Check if any updates are available, if there are none, script pops up dialog box saying 'No Updates Available', removes /tmp/updateslist.XXXXXX
 if [  -z "$(cat $UPDATES)"  ]; then
@@ -81,7 +81,7 @@ zenity --text-info --ok-label="Update" --cancel-label="Cancel" --title="Linux Li
                  rm $UPDATES
                  unset UPDATES
 #Begin upgrade
-sudo DEBIAN_FRONTEND=noninteractive apt-get  -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" dist-upgrade -y  2>&1 | tee /var/log/llupdates.log | awk ' BEGIN { FS=" "; total=1;end_download=0} /upgraded/ {total= $1 + $3;FS="[ :]" } /^Get:[[:digit:]]+/ {printf "#Downloading %s %s %s\n",$6,$(NF-1),$NF;print int(($2 - 1) * 100 / total); fflush(stdout)} /^\(Reading / {if (end_download==0){print 100;fflush(stdout);end_download=1}} /^(Preparing|Unpacking|Selecting|Processing|Setting|Download)/ {print "#", substr($0, 0, 128); fflush(stdout)}' \
+sudo DEBIAN_FRONTEND=noninteractive apt-get  -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade -y  2>&1 | tee /var/log/llupdates.log | awk ' BEGIN { FS=" "; total=1;end_download=0} /upgraded/ {total= $1 + $3;FS="[ :]" } /^Get:[[:digit:]]+/ {printf "#Downloading %s %s %s\n",$6,$(NF-1),$NF;print int(($2 - 1) * 100 / total); fflush(stdout)} /^\(Reading / {if (end_download==0){print 100;fflush(stdout);end_download=1}} /^(Preparing|Unpacking|Selecting|Processing|Setting|Download)/ {print "#", substr($0, 0, 128); fflush(stdout)}' \
     | ( zenity --window-icon=$ic --progress --width=600 --text="Downloading package(s)...\nThis may take a while." --title="Downloading - please wait..." --percentage=0 --auto-close ; zenity --progress --window-icon=$ic --width=600 --text="Installing and configuring packages...\nThis may take a while." --title="Installing - please wait..."  --pulsate --auto-close )
 
                                 if [ "${PIPESTATUS[0]}" -ne "0" ]; then
