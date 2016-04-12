@@ -60,11 +60,6 @@ sed -i -e '1 i\List of available Updates' -e '1 i\Click Update to continue or Ca
 # Erase existing available info
 sudo dpkg --clear-avail
 
-  else
-       rm $UPDATES
-       unset UPDATES
-       exit 0
-  fi
 
 # Call the zenity dialog to show update list
 zenity --text-info --ok-label="Update" --cancel-label="Cancel" --title="Linux Lite Updates" --width=780 --height=300 --filename="$UPDATES"
