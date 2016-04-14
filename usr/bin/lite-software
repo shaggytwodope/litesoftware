@@ -88,12 +88,12 @@ soft_list=(googlechromebr
   wine )
 
 
-UNAME=`uname -m`
+UNAME=$(uname -m)
 if [ "i686" == ${UNAME} ]; then
-      unset soft_list[0]
-      unset soft_list[16]
+    unset soft_list[0]
+    unset soft_list[16]
 else
-      :
+    :
 fi
 
 
